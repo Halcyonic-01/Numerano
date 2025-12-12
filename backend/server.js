@@ -13,8 +13,18 @@ const { errorHandler } = require('./middleware/errorMiddleware');
 const authRoutes = require('./routes/authRoutes');
 const teamRoutes = require('./routes/teamRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
-dotenv.config();
+// Load env from backend/.env explicitly
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+
+// Warn if critical env vars are missing
+if (!process.env.MONGO_URI) {
+  console.warn('MONGO_URI is not set. Check backend/.env');
+}
+if (!process.env.JWT_SECRET) {
+  console.warn('JWT_SECRET is not set. Check backend/.env');
+}
 
 // Connect DB (Atlas)
 const connectDB = async () => {
@@ -49,6 +59,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health Check
 app.get('/', (req, res) => res.send('API is running...'));

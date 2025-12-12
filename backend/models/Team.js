@@ -12,6 +12,13 @@ const teamSchema = new mongoose.Schema({
   idCardUrl: { type: String, required: true },
   isIdVerified: { type: Boolean, default: false },
   status: { type: String, default: 'pending', enum: ['pending', 'approved', 'rejected'] },
+  
+  // Admin review fields
+  adminComments: { type: String },
+  rejectionReason: { type: String },
+  reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' },
+  reviewedAt: { type: Date },
+  
   documents: [{
     _id: { type: String, required: true },
     filename: { type: String, required: true },

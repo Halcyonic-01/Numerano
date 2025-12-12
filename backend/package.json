@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-  "start": "node server.js",       
-  "dev": "nodemon server.js",       
-  "docker:build": "docker build -t hackathon-backend .",
-  "docker:run": "docker run -p 5000:5000 --env-file .env hackathon-backend"
-},
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "docker:build": "docker build -t hackathon-backend .",
+    "docker:run": "docker run -p 5000:5000 --env-file .env hackathon-backend"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -20,6 +20,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-validator": "^7.3.1",
+    "groq-sdk": "^0.37.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.0.1",

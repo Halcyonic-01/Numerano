@@ -10,6 +10,25 @@ const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
 ];
 
+// NavLink component for navigation
+const NavLink = ({ to, children, className = "" }: { to: string; children: React.ReactNode; className?: string }) => {
+  const location = useLocation();
+  const isActive = location.pathname === to;
+  
+  return (
+    <Link
+      to={to}
+      className={cn(
+        "text-sm font-medium transition-colors hover:text-primary",
+        isActive ? "text-primary" : "text-muted-foreground",
+        className
+      )}
+    >
+      {children}
+    </Link>
+  );
+};
+
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
@@ -30,24 +49,12 @@ export function Navbar() {
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-8">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className={cn(
-                    "text-sm font-medium transition-colors hover:text-primary relative py-2",
-                    location.pathname === link.href
-                      ? "text-primary"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {link.label}
-                  {location.pathname === link.href && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-accent rounded-full" />
-                  )}
-                </Link>
-              ))}
+            <div className="hidden md:flex items-center space-x-6">
+              <NavLink to="/">Home</NavLink>
+              <NavLink to="/register">Register Team</NavLink>
+              <NavLink to="/admin/login" className="text-muted-foreground/70 hover:text-primary">
+                Admin
+              </NavLink>
             </div>
 
             {/* CTA Buttons */}
@@ -88,6 +95,13 @@ export function Navbar() {
                     {link.label}
                   </Link>
                 ))}
+                <Link 
+                  to="/admin/login"
+                  onClick={() => setIsOpen(false)}
+                  className="px-4 py-3 rounded-xl text-sm font-medium transition-colors text-muted-foreground hover:bg-muted"
+                >
+                  Admin Portal
+                </Link>
                 <div className="flex gap-2 mt-4">
                   <Button variant="ghost" className="flex-1" asChild>
                     <Link to="/login">Login</Link>

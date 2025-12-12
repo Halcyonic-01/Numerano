@@ -1,19 +1,23 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const Groq = require("groq-sdk");
+require('dotenv').config();
 
-// --- CONFIGURATION & FINE-TUNING ---
+// --- CONFIGURATION ---
 
 // Check if API key exists
-if (!process.env.GEMINI_API_KEY) {
-    console.error('GEMINI_API_KEY is not set in environment variables');
+if (!process.env.GROQ_API_KEY) {
+    console.error('GROQ_API_KEY is not set in environment variables');
 }
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-pro"});
+// Initialize Groq client
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY
+});
 
-// Updated system context with comprehensive project information
-const hackathonSystemContext = `
-INSTRUCTIONS:
-You are "TeamBot", the expert AI assistant for the 'Numerano' Hackathon Platform.
+// Groq model configuration
+const GROQ_MODEL = "llama-3.3-70b-versatile"; // Fast and accurate model for chat
+
+// --- SYSTEM CONTEXT ---
+const hackathonSystemContext = `You are "TeamBot", the expert AI assistant for the 'Numerano' Hackathon Platform.
 You must answer questions specifically related to this project, its features, and processes.
 
 PROJECT OVERVIEW:
@@ -23,16 +27,13 @@ TECH STACK:
 * Frontend: React 18, TypeScript, Vite, Tailwind CSS, ShadcnUI, Lucide Icons
 * Backend: Node.js, Express.js, JWT Authentication
 * Database: MongoDB Atlas with Mongoose ODM
-* AI/ML: Google Gemini Pro (You!), Tesseract.js OCR, Google reCAPTCHA v2
+* AI/ML: Groq AI (You!), Tesseract.js OCR, Google reCAPTCHA v2
 * Email: Nodemailer with automated notifications
 * File Upload: Multer with 5MB limit (PDF, DOC, DOCX, JPG, PNG, TXT)
 * Security: bcryptjs, Helmet, CORS, rate limiting
 
 KEY FEATURES:
-1. **User Authentication**:
-   - Secure signup/login with JWT tokens
-   - Password hashing with bcryptjs
-   - Protected routes and role-based access
+1. **User Authentication**: Secure signup/login with JWT tokens, password hashing with bcryptjs, protected routes and role-based access.
 
 2. **Team Registration Process**:
    - Step 1: Human verification with reCAPTCHA
@@ -94,88 +95,79 @@ FILE MANAGEMENT:
 - Files stored securely on server filesystem
 - Access controlled through API authentication
 
-CONSTRAINTS:
+RESPONSE GUIDELINES:
 * Answer only Numerano-related questions
 * Provide accurate technical information about the platform
 * If asked about unrelated topics, politely redirect to Numerano features
 * Be helpful, concise, and professional
 * Include specific details about processes and limitations when relevant
-`;
+* Use emojis sparingly for better engagement
+* Format responses with bullet points and numbered lists for clarity`;
 
 // --- CONTROLLER ---
 
-// @desc Chat with AI (Gemini Pro) with Fallback
-exports.chatWithBot = async (req, res, next) => {
+exports.chatWithBot = async (req, res) => {
   try {
     const { message } = req.body;
 
+    // 1. Input Validation
     if (!message) {
-        res.status(400);
-        throw new Error("Message field is required");
+      return res.status(400).json({ error: "Message field is required" });
     }
 
-    // If no API key, use fallback responses
-    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.length < 20) {
-        const fallbackResponse = getFallbackResponse(message.toLowerCase());
-        return res.json({ reply: fallbackResponse });
+    // 2. Fallback Check: If key is missing/invalid, use local responses
+    if (!process.env.GROQ_API_KEY || process.env.GROQ_API_KEY.length < 20) {
+      console.warn("Groq API key missing. Using fallback.");
+      return res.json({ reply: getFallbackResponse(message.toLowerCase()) });
     }
-    
-    // Start chat session with comprehensive system context
-    const chat = model.startChat({
-        history: [
-            {
-                role: "user",
-                parts: [{ text: hackathonSystemContext + "\n\nIntroduce yourself briefly and ask how you can help." }],
-            },
-            {
-                role: "model",
-                parts: [{ text: "Hello! I'm TeamBot, your AI assistant for the Numerano platform. I can help you with team registration, document management, platform features, technical questions, and troubleshooting. What would you like to know about Numerano today?" }],
-            },
-        ],
-        generationConfig: {
-            maxOutputTokens: 800, // Increased for more detailed responses
-            temperature: 0.8, // Slightly more creative responses
-        },
+
+    // 3. AI Request to Groq
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: hackathonSystemContext },
+        { role: "user", content: message }
+      ],
+      model: GROQ_MODEL,
+      temperature: 0.7, // Balanced between creativity and accuracy
+      max_tokens: 1000, // Maximum response length
+      top_p: 1,
+      stream: false
     });
 
-    const result = await chat.sendMessage(message);
-    const response = await result.response;
-    const botReply = response.text();
+    const botReply = chatCompletion.choices[0]?.message?.content;
 
     if (!botReply) {
-        throw new Error("Received empty response from AI service");
+      throw new Error("Empty response from Groq API");
     }
 
+    // 4. Send Success Response
     res.json({ reply: botReply });
 
   } catch (error) {
-    console.error("Gemini Chat API Error:", error);
+    console.error("Groq Chat API Error:", error.message);
     
-    // Fallback to predefined responses on any error
-    const fallbackResponse = getFallbackResponse(req.body.message?.toLowerCase() || "");
-    return res.json({ reply: fallbackResponse });
+    // 5. Error Fallback: Ensure the user always gets an answer
+    const fallback = getFallbackResponse(req.body.message?.toLowerCase() || "");
+    res.json({ reply: fallback });
   }
 };
 
-// Fallback response function
+// --- FALLBACK LOGIC ---
 function getFallbackResponse(message) {
-    const responses = {
-        'register': 'To register your team:\n1. Click "Register Team" from dashboard\n2. Complete reCAPTCHA verification\n3. Enter team details (max 4 members)\n4. Upload your ID card\n5. Get your unique Team ID!',
-        'team': 'Numerano supports teams of up to 4 members including the leader. Only team leaders can add/remove members and manage documents.',
-        'document': 'You can upload documents like ID cards, certificates, etc. Supported formats: PDF, DOC, DOCX, JPG, PNG, TXT (max 5MB). Only team leaders can upload/delete documents.',
-        'verification': 'We use OCR technology to automatically verify your ID card. If your name matches the ID text, you\'ll be auto-verified. Otherwise, manual review is required.',
-        'login': 'Having trouble logging in? Make sure you\'re using the correct email and password. If you forgot your password, contact support.',
-        'dashboard': 'Your dashboard shows team information, member list, verification status, and document management. Team leaders have additional editing permissions.',
-        'support': 'For technical support, you can:\n• Use this chat widget\n• Contact our support team\n• Check the help documentation\n• Review team guidelines'
-    };
+  const responses = {
+    'register': '🎯 To register your team:\n1. Click "Register Team" from dashboard\n2. Complete reCAPTCHA\n3. Enter details (max 4 members)\n4. Upload ID card\n5. Get your Team ID!',
+    'team': '👥 Numerano supports teams of up to 4 members. Only leaders can manage members and docs.',
+    'document': '📄 Supported formats: PDF, DOC, DOCX, JPG, PNG, TXT (max 5MB). Only leaders can upload/delete.',
+    'verification': '✅ We use OCR technology. If your name matches the ID card text, you are auto-verified. Otherwise, manual review takes 24-48 hours.',
+    'login': '🔐 Check your email/password. If issues persist, contact support@numerano.com.',
+    'dashboard': '📊 Dashboard shows: Team ID, Member list, Verification status, and Documents.',
+    'help': '🤖 I can help with Registration, Documents, Platform features, and Support. What do you need?',
+    'hello': '👋 Hi! I am TeamBot for Numerano. How can I help you with your hackathon team today?'
+  };
 
-    // Find matching response
-    for (const [keyword, response] of Object.entries(responses)) {
-        if (message.includes(keyword)) {
-            return response;
-        }
-    }
+  for (const [keyword, response] of Object.entries(responses)) {
+    if (message.includes(keyword)) return response;
+  }
 
-    // Default response
-    return 'Hello! I\'m TeamBot for Numerano. I can help you with:\n• Team registration process\n• Document management\n• Platform features\n• Technical support\n\nWhat specific question do you have about Numerano?';
+  return '👋 I am TeamBot. I can help with Numerano registration, teams, and documents. What is your question?';
 }

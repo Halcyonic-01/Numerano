@@ -4,6 +4,6 @@ const { chatWithBot } = require('../controllers/chatController');
 const { protect } = require('../middleware/authMiddleware');
 
 // Route: /api/chat
-router.post('/', protect, chatWithBot);
+router.post('/', chatWithBot);
 
 module.exports = router;
