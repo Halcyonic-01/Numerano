@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
 import ChatWidget from "@/components/chat/ChatWidget";
+import EditTeamDialog from "@/components/shared/EditTeamDialog";
+import ViewDocumentsDialog from "@/components/shared/ViewDocumentsDialog";
 import {
   Users,
   FileCheck,
@@ -14,40 +16,226 @@ import {
   Bell,
   Settings,
   LogOut,
+  Loader2,
+  ArrowRight
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import api from "@/lib/api";
 
-const mockTeamData = {
-  id: "TH-M5K8X2-ABCD",
-  name: "Alpha Innovators",
-  organization: "Tech University",
-  status: "verified",
-  members: [
-    { name: "John Doe", email: "john@example.com", role: "Leader" },
-    { name: "Jane Smith", email: "jane@example.com", role: "Member" },
-    { name: "Mike Johnson", email: "mike@example.com", role: "Member" },
-  ],
-  createdAt: "2024-01-15",
-};
+interface TeamMember {
+  name: string;
+  email: string;
+  _id?: string;
+}
+
+interface TeamData {
+  _id: string;
+  teamId: string;
+  teamName: string;
+  organization: string;
+  status: string;
+  isIdVerified: boolean;
+  members: TeamMember[];
+  documents?: any[];
+  createdAt: string;
+}
 
 const stats = [
-  { icon: Users, label: "Team Members", value: "3", color: "from-blue-500 to-cyan-500" },
+  { icon: Users, label: "Team Members", value: "0", color: "from-blue-500 to-cyan-500" },
   { icon: FileCheck, label: "Documents", value: "1", color: "from-purple-500 to-pink-500" },
-  { icon: Clock, label: "Days Active", value: "45", color: "from-orange-500 to-red-500" },
+  { icon: Clock, label: "Days Active", value: "1", color: "from-orange-500 to-red-500" },
 ];
 
 export default function Dashboard() {
   const { toast } = useToast();
-  const [team] = useState(mockTeamData);
+  const navigate = useNavigate();
+  const [team, setTeam] = useState<TeamData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Get current user info to determine if they're the leader
+  const currentUser = JSON.parse(localStorage.getItem('userInfo') || '{}');
+  const isLeader = team && team.members.length > 0 && team.members[0].email === currentUser.email;
+
+  const handleTeamUpdate = (updatedTeam: TeamData) => {
+    setTeam(updatedTeam);
+    // Update stats with new data
+    stats[0].value = updatedTeam.members.length.toString();
+  };
+
+  useEffect(() => {
+    const fetchTeam = async () => {
+      try {
+        const { data } = await api.get('/teams/me');
+        setTeam(data);
+        
+        // Update stats based on real data
+        if (data) {
+          stats[0].value = data.members.length.toString();
+          stats[1].value = (data.documents?.length || 0).toString(); // Update documents count
+          
+          // Calculate days active
+          const created = new Date(data.createdAt);
+          const now = new Date();
+          const diffTime = Math.abs(now.getTime() - created.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+          stats[2].value = diffDays.toString();
+        }
+      } catch (error) {
+        console.log("User has no team or fetch failed");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeam();
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userInfo');
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out.",
+    });
+    navigate('/');
+  };
 
   const copyTeamId = () => {
-    navigator.clipboard.writeText(team.id);
-    toast({
-      title: "Copied!",
-      description: "Team ID copied to clipboard.",
-    });
+    if (team?.teamId) {
+      navigator.clipboard.writeText(team.teamId);
+      toast({
+        title: "Copied!",
+        description: "Team ID copied to clipboard.",
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // If no team is found, show empty state
+  if (!team) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        
+        {/* Background */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-[100px]" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-[120px]" />
+        
+        <div className="container mx-auto px-6 pt-32 pb-16 relative">
+          {/* Welcome Message */}
+          <div className="text-center mb-12">
+            <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-4">
+              Welcome to <span className="gradient-text">Numerano</span>!
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              You're all set! Now you can register your team for the hackathon and start your journey.
+            </p>
+          </div>
+
+          {/* Action Cards */}
+          <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
+            {/* Register Team Card */}
+            <div className="glass-card rounded-3xl p-8 hover-lift group">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-6 mx-auto group-hover:scale-110 transition-transform">
+                <Users className="w-8 h-8 text-primary-foreground" />
+              </div>
+              <h2 className="font-display text-2xl font-bold text-center text-foreground mb-4">
+                Register Your Team
+              </h2>
+              <p className="text-muted-foreground text-center mb-6">
+                Create your team, add members, and upload your ID for verification. Get your unique Team ID instantly.
+              </p>
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center gap-3 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+                  <span>Human verification with reCAPTCHA</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+                  <span>Add team members and details</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+                  <span>Upload ID for verification</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+                  <span>Get unique Team ID</span>
+                </div>
+              </div>
+              <Button variant="gradient" size="lg" className="w-full" asChild>
+                <Link to="/register">
+                  Register Team Now
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Link>
+              </Button>
+            </div>
+
+            {/* Explore Features Card */}
+            <div className="glass-card rounded-3xl p-8 hover-lift group">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-primary flex items-center justify-center mb-6 mx-auto group-hover:scale-110 transition-transform">
+                <FileCheck className="w-8 h-8 text-primary-foreground" />
+              </div>
+              <h2 className="font-display text-2xl font-bold text-center text-foreground mb-4">
+                Explore Dashboard
+              </h2>
+              <p className="text-muted-foreground text-center mb-6">
+                Take a tour of your dashboard features. You can always register your team later when you're ready.
+              </p>
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center gap-3 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-blue-500" />
+                  <span>View platform features</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-blue-500" />
+                  <span>Chat with support</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-blue-500" />
+                  <span>Access quick actions</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-blue-500" />
+                  <span>Register team anytime</span>
+                </div>
+              </div>
+              <Button variant="outline" size="lg" className="w-full">
+                <ExternalLink className="w-5 h-5 mr-2" />
+                Continue Exploring
+              </Button>
+            </div>
+          </div>
+
+          {/* Help Section */}
+          <div className="text-center mt-16">
+            <p className="text-muted-foreground mb-4">
+              Need help getting started? Our support team is here for you.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button variant="ghost" className="inline-flex items-center">
+                <Users className="w-4 h-4 mr-2" />
+                View Team Guidelines
+              </Button>
+              <Button variant="ghost" className="inline-flex items-center">
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Contact Support
+              </Button>
+            </div>
+          </div>
+        </div>
+        <ChatWidget />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,15 +254,20 @@ export default function Dashboard() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm text-muted-foreground">Welcome back,</span>
-                  {team.status === "verified" && (
+                  {team.isIdVerified ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
                       <CheckCircle2 className="w-3 h-3" />
                       Verified
                     </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-medium">
+                      <Clock className="w-3 h-3" />
+                      Pending Verification
+                    </span>
                   )}
                 </div>
                 <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
-                  {team.name}
+                  {team.teamName}
                 </h1>
                 <p className="text-muted-foreground">{team.organization}</p>
               </div>
@@ -86,11 +279,9 @@ export default function Dashboard() {
                 <Button variant="ghost" size="icon">
                   <Settings className="w-5 h-5" />
                 </Button>
-                <Button variant="outline" asChild>
-                  <Link to="/">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
-                  </Link>
+                <Button variant="outline" onClick={handleLogout}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
                 </Button>
               </div>
             </div>
@@ -132,7 +323,7 @@ export default function Dashboard() {
               <div className="bg-muted rounded-xl p-4 mb-4">
                 <div className="flex items-center justify-between">
                   <code className="font-mono text-lg font-bold gradient-text">
-                    {team.id}
+                    {team.teamId}
                   </code>
                   <Button variant="ghost" size="icon" onClick={copyTeamId}>
                     <Copy className="w-4 h-4" />
@@ -152,10 +343,11 @@ export default function Dashboard() {
                 <h2 className="font-display text-lg font-semibold text-foreground">
                   Team Members
                 </h2>
-                <Button variant="outline" size="sm">
-                  <Edit3 className="w-4 h-4 mr-2" />
-                  Edit Team
-                </Button>
+                <EditTeamDialog 
+                  team={team} 
+                  onTeamUpdate={handleTeamUpdate} 
+                  isLeader={isLeader} 
+                />
               </div>
 
               <div className="space-y-4">
@@ -167,7 +359,7 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-semibold">
-                        {member.name.charAt(0)}
+                        {member.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
                         <p className="font-medium text-foreground">{member.name}</p>
@@ -176,11 +368,11 @@ export default function Dashboard() {
                     </div>
                     <span className={cn(
                       "px-3 py-1 rounded-full text-xs font-medium",
-                      member.role === "Leader"
+                      index === 0
                         ? "bg-primary/10 text-primary"
                         : "bg-muted text-muted-foreground"
                     )}>
-                      {member.role}
+                      {index === 0 ? "Leader" : "Member"}
                     </span>
                   </div>
                 ))}
@@ -207,15 +399,10 @@ export default function Dashboard() {
               </Link>
             </Button>
 
-            <Button variant="outline" className="h-auto py-4 justify-start">
-              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center mr-4">
-                <FileCheck className="w-5 h-5 text-accent" />
-              </div>
-              <div className="text-left">
-                <p className="font-medium">View Documents</p>
-                <p className="text-xs text-muted-foreground">Manage uploaded files</p>
-              </div>
-            </Button>
+            <ViewDocumentsDialog 
+              teamId={team._id} 
+              isLeader={isLeader} 
+            />
 
             <Button variant="outline" className="h-auto py-4 justify-start">
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center mr-4">

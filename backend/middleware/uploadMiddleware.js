@@ -18,8 +18,9 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-    if (!file.mimetype.match(/\/(jpg|jpeg|png|pdf)$/)) {
-        return cb(new Error('Only image files are allowed!'), false);
+    // Allow images for ID cards and documents (PDF, DOC, DOCX, TXT) for team documents
+    if (!file.mimetype.match(/\/(jpg|jpeg|png|pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document|plain)$/)) {
+        return cb(new Error('File type not supported. Please upload JPG, PNG, PDF, DOC, DOCX, or TXT files.'), false);
     }
     cb(null, true);
 };

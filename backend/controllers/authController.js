@@ -58,3 +58,25 @@ exports.loginUser = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc Verify User Token
+exports.verifyUser = async (req, res, next) => {
+  try {
+    // User is already authenticated via middleware
+    const user = await User.findById(req.user.id).select('-password');
+    
+    if (user) {
+      res.json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        isAuthenticated: true,
+      });
+    } else {
+      res.status(404);
+      throw new Error('User not found');
+    }
+  } catch (error) {
+    next(error);
+  }
+};

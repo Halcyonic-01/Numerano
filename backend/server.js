@@ -30,21 +30,22 @@ connectDB();
 
 const app = express();
 
-// Global Middleware
-app.use(express.json());
+// --- 1. CORS MUST BE FIRST ---
+// 'origin: true' allows the request origin automatically (dynamic allowing)
 app.use(cors({
-  // Allow BOTH common Vite ports to be safe
-  origin: ["http://localhost:8080", "http://localhost:5173"], 
+  origin: true, 
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE"], // Explicitly allow methods
-  allowedHeaders: ["Content-Type", "Authorization"] // Explicitly allow headers
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
+// --- 2. THEN OTHER MIDDLEWARE ---
+app.use(express.json());
 app.use(helmet());
 app.use(morgan('dev'));
-// Serve uploaded files statically so frontend can display them if needed
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// --- MOUNT ROUTES ---
+// --- 3. MOUNT ROUTES ---
 app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/chat', chatRoutes);

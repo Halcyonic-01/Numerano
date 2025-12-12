@@ -38,7 +38,7 @@ export function Footer() {
                 <Users className="w-5 h-5 text-primary-foreground" />
               </div>
               <span className="font-display font-bold text-xl text-foreground">
-                Team<span className="gradient-text">Hub</span>
+                Numerano<span className="gradient-text">Hub</span>
               </span>
             </Link>
             <p className="text-muted-foreground text-sm max-w-xs mb-6">
@@ -110,7 +110,7 @@ export function Footer() {
 
         <div className="border-t border-border mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2024 TeamHub. All rights reserved.
+            © 2024 Numerano. All rights reserved.
           </p>
           <div className="flex gap-6">
             <Link to="#terms" className="text-sm text-muted-foreground hover:text-primary transition-colors">

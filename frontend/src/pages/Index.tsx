@@ -113,7 +113,7 @@ export default function Index() {
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Why Choose <span className="gradient-text">TeamHub</span>?
+              Why Choose <span className="gradient-text">Numerano</span>?
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Everything you need for seamless team registration and verification
@@ -179,7 +179,7 @@ export default function Index() {
               Ready to Get Started?
             </h2>
             <p className="text-lg text-muted-foreground mb-8">
-              Join thousands of teams who trust TeamHub for their registration needs.
+              Join thousands of teams who trust Numerano for their registration needs.
             </p>
             <Button variant="hero" size="xl" asChild>
               <Link to="/register">

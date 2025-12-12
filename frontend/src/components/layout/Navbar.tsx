@@ -25,7 +25,7 @@ export function Navbar() {
                 <Users className="w-5 h-5 text-primary-foreground" />
               </div>
               <span className="font-display font-bold text-xl text-foreground">
-                Team<span className="gradient-text">Hub</span>
+                Numerano<span className="gradient-text">Hub</span>
               </span>
             </Link>
 

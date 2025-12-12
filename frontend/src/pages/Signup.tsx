@@ -46,10 +46,12 @@ export default function Signup() {
       localStorage.setItem('userInfo', JSON.stringify(data));
 
       toast({
-        title: "Account Created!",
-        description: `Welcome, ${data.name}!`,
+        title: "Account Created Successfully!",
+        description: `Welcome to Numerano, ${data.name}! You can now register your team.`,
       });
-      navigate('/dashboard'); // Redirect to dashboard
+      
+      // Redirect to dashboard which will show options to register team
+      navigate('/dashboard');
       
     } catch (error: any) {
       toast({
@@ -92,7 +94,7 @@ export default function Signup() {
                 Create Account
               </h1>
               <p className="text-muted-foreground">
-                Join TeamHub and start registering your teams
+                Join Numerano and start registering your teams
               </p>
             </div>
 

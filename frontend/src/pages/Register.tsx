@@ -20,7 +20,6 @@ import {
   Copy
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-// 1. IMPORT RECAPTCHA
 import ReCAPTCHA from "react-google-recaptcha";
 
 const steps = [
@@ -38,7 +37,6 @@ interface TeamMember {
 
 export default function Register() {
   const [currentStep, setCurrentStep] = useState(1);
-  // 2. CHANGE STATE TO HOLD TOKEN INSTEAD OF BOOLEAN
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   
   const [teamName, setTeamName] = useState("");
@@ -53,6 +51,14 @@ export default function Register() {
   const navigate = useNavigate();
 
   const addTeamMember = () => {
+    if (teamMembers.length >= 4) {
+      toast({
+        title: "Team Size Limit",
+        description: "Maximum team size is 4 members including the leader.",
+        variant: "destructive",
+      });
+      return;
+    }
     setTeamMembers([
       ...teamMembers,
       { id: Date.now(), name: "", email: "" },
@@ -71,13 +77,11 @@ export default function Register() {
     );
   };
 
-  // 3. HANDLE CAPTCHA CHANGE
   const onCaptchaChange = (token: string | null) => {
     setCaptchaToken(token);
   };
 
   const handleNext = () => {
-    // 4. CHECK IF TOKEN EXISTS INSTEAD OF BOOLEAN
     if (currentStep === 1 && !captchaToken) {
       toast({
         title: "Verification Required",
@@ -135,7 +139,6 @@ export default function Register() {
       formData.append('organization', organization);
       formData.append('members', JSON.stringify(teamMembers));
       
-      // 5. SEND THE REAL TOKEN
       if (captchaToken) {
         formData.append('captchaToken', captchaToken);
       }
@@ -199,7 +202,6 @@ export default function Register() {
           </div>
 
           <div className="glass-card rounded-3xl p-8 animate-scale-in">
-            {/* Step 1: Verification */}
             {currentStep === 1 && (
               <div className="space-y-6">
                 <div className="text-center">
@@ -216,7 +218,6 @@ export default function Register() {
 
                 <div className="flex items-center justify-center">
                   <div className="p-4 bg-white rounded-xl shadow-sm">
-                    {/* 6. RENDER THE GOOGLE RECAPTCHA WIDGET */}
                     <ReCAPTCHA
                         sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
                         onChange={onCaptchaChange}
@@ -226,7 +227,6 @@ export default function Register() {
               </div>
             )}
 
-            {/* Step 2: Team Details */}
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div className="text-center mb-8">
@@ -322,7 +322,6 @@ export default function Register() {
               </div>
             )}
 
-            {/* Step 3: ID Upload */}
             {currentStep === 3 && (
               <div className="space-y-6">
                 <div className="text-center mb-8">
@@ -349,7 +348,6 @@ export default function Register() {
               </div>
             )}
 
-            {/* Step 4: Review & Submit */}
             {currentStep === 4 && !teamId && (
               <div className="space-y-6">
                 <div className="text-center mb-8">
@@ -395,7 +393,6 @@ export default function Register() {
               </div>
             )}
 
-            {/* Success Screen */}
             {teamId && (
               <div className="text-center py-8 animate-scale-in">
                 <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mb-6 shadow-lg">
@@ -406,7 +403,7 @@ export default function Register() {
                   Registration Successful!
                 </div>
                 <h2 className="font-display text-3xl font-bold text-foreground mb-2">
-                  Welcome to TeamHub!
+                  Welcome to Numerano!
                 </h2>
                 <p className="text-muted-foreground mb-8">
                   Your team has been registered successfully
@@ -431,7 +428,6 @@ export default function Register() {
               </div>
             )}
 
-            {/* Navigation Buttons */}
             {!teamId && (
               <div className="flex justify-between mt-8 pt-6 border-t border-border">
                 <Button

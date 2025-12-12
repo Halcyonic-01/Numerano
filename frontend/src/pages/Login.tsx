@@ -17,7 +17,7 @@ export default function Login() {
 
   const navigate = useNavigate();
 
-const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -33,10 +33,11 @@ const handleSubmit = async (e: React.FormEvent) => {
 
       toast({
         title: "Login Successful!",
-        description: "Welcome back to TeamHub.",
+        description: `Welcome back, ${data.name}! Redirecting to your dashboard.`,
       });
       
-      navigate('/dashboard'); 
+      // Redirect to dashboard  
+      navigate('/dashboard');
 
     } catch (error: any) {
       toast({
@@ -47,7 +48,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     } finally {
       setIsLoading(false);
     }
-};
+  };
 
   const handleGoogleLogin = () => {
     toast({
@@ -79,7 +80,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 Welcome Back
               </h1>
               <p className="text-muted-foreground">
-                Sign in to your TeamHub account
+                Sign in to your Numerano account
               </p>
             </div>
 
