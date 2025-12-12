@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { FeatureCard } from "@/components/shared/FeatureCard";
-import { ChatWidget } from "@/components/chat/ChatWidget";
+import ChatWidget from "@/components/chat/ChatWidget";
 import { 
   Shield, 
   Zap, 

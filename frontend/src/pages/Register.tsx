@@ -20,7 +20,8 @@ import {
   Copy
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Checkbox } from "@/components/ui/checkbox";
+// 1. IMPORT RECAPTCHA
+import ReCAPTCHA from "react-google-recaptcha";
 
 const steps = [
   { title: "Verify", description: "Human verification" },
@@ -37,7 +38,9 @@ interface TeamMember {
 
 export default function Register() {
   const [currentStep, setCurrentStep] = useState(1);
-  const [isVerified, setIsVerified] = useState(false);
+  // 2. CHANGE STATE TO HOLD TOKEN INSTEAD OF BOOLEAN
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  
   const [teamName, setTeamName] = useState("");
   const [organization, setOrganization] = useState("");
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
@@ -48,10 +51,6 @@ export default function Register() {
   const [teamId, setTeamId] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  const generateTeamId = () => {
-    return `TH-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-  };
 
   const addTeamMember = () => {
     setTeamMembers([
@@ -72,11 +71,17 @@ export default function Register() {
     );
   };
 
+  // 3. HANDLE CAPTCHA CHANGE
+  const onCaptchaChange = (token: string | null) => {
+    setCaptchaToken(token);
+  };
+
   const handleNext = () => {
-    if (currentStep === 1 && !isVerified) {
+    // 4. CHECK IF TOKEN EXISTS INSTEAD OF BOOLEAN
+    if (currentStep === 1 && !captchaToken) {
       toast({
         title: "Verification Required",
-        description: "Please complete the verification checkbox.",
+        description: "Please complete the reCAPTCHA verification.",
         variant: "destructive",
       });
       return;
@@ -124,18 +129,16 @@ export default function Register() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-
     try {
-      // Must use FormData for file uploads
       const formData = new FormData();
       formData.append('teamName', teamName);
-      formData.append('organization', organization); // Note: You might need to add this field to your Backend Team Model if it's missing!
-      formData.append('members', JSON.stringify(teamMembers)); // Backend parses this JSON string
+      formData.append('organization', organization);
+      formData.append('members', JSON.stringify(teamMembers));
       
-      // RECAPTCHA: Ideally, you should get a real token from a reCAPTCHA component here.
-      // For now, if you disabled reCAPTCHA verification in backend for testing, send a dummy.
-      // If enabled, you need to install 'react-google-recaptcha' in frontend.
-      formData.append('captchaToken', 'dummy-token-or-real-token'); 
+      // 5. SEND THE REAL TOKEN
+      if (captchaToken) {
+        formData.append('captchaToken', captchaToken);
+      }
 
       if (idFile) {
         formData.append('idCard', idFile);
@@ -145,7 +148,7 @@ export default function Register() {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      setTeamId(data.teamId); // The backend returns the generated ID
+      setTeamId(data.teamId);
       
       toast({
         title: "Success!",
@@ -161,7 +164,7 @@ export default function Register() {
     } finally {
       setIsSubmitting(false);
     }
-};
+  };
 
   const copyTeamId = () => {
     if (teamId) {
@@ -177,13 +180,11 @@ export default function Register() {
     <div className="min-h-screen bg-background relative overflow-hidden">
       <Navbar />
       
-      {/* Background */}
       <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-[100px]" />
       <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/20 rounded-full blur-[120px]" />
 
       <div className="container mx-auto px-6 pt-32 pb-16 relative">
         <div className="max-w-3xl mx-auto">
-          {/* Header */}
           <div className="text-center mb-12">
             <h1 className="font-display text-4xl font-bold text-foreground mb-4">
               Register Your <span className="gradient-text">Team</span>
@@ -193,12 +194,10 @@ export default function Register() {
             </p>
           </div>
 
-          {/* Step Indicator */}
           <div className="mb-12">
             <StepIndicator steps={steps} currentStep={currentStep} />
           </div>
 
-          {/* Step Content */}
           <div className="glass-card rounded-3xl p-8 animate-scale-in">
             {/* Step 1: Verification */}
             {currentStep === 1 && (
@@ -216,24 +215,12 @@ export default function Register() {
                 </div>
 
                 <div className="flex items-center justify-center">
-                  <div className="glass-card rounded-xl p-6 border-2 border-border hover:border-primary/50 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <Checkbox
-                        id="verification"
-                        checked={isVerified}
-                        onCheckedChange={(checked) => setIsVerified(checked === true)}
-                        className="w-6 h-6"
-                      />
-                      <label
-                        htmlFor="verification"
-                        className="text-sm font-medium text-foreground cursor-pointer select-none"
-                      >
-                        I'm not a robot
-                      </label>
-                      <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                        <ShieldCheck className="w-5 h-5 text-muted-foreground" />
-                      </div>
-                    </div>
+                  <div className="p-4 bg-white rounded-xl shadow-sm">
+                    {/* 6. RENDER THE GOOGLE RECAPTCHA WIDGET */}
+                    <ReCAPTCHA
+                        sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                        onChange={onCaptchaChange}
+                    />
                   </div>
                 </div>
               </div>

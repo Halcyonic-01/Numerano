@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
-import { ChatWidget } from "@/components/chat/ChatWidget";
+import ChatWidget from "@/components/chat/ChatWidget";
 import {
   Users,
   FileCheck,
