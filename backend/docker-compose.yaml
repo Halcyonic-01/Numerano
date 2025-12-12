@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  backend:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      # Docker will read the rest from your .env file
+    env_file:
+      - .env 
+    # Use nodemon inside Docker for development (optional)
+    command: npm run dev 
+    volumes:
+      - .:/app
+      - /app/node_modules
