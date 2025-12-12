@@ -9,22 +9,19 @@ const path = require('path');
 // @desc Register Team
 exports.registerTeam = async (req, res, next) => {
   try {
-    // 1. Extract data including organization
     const { teamName, organization, members, captchaToken } = req.body;
     
-    // 2. Human Verification (reCAPTCHA)
-    // Note: If testing locally with a dummy token, you might want to skip this check or use a test key.
+    // 1. Human Verification
     if (captchaToken !== 'dummy-token-or-real-token') {
         const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaToken}`;
         const captchaResponse = await axios.post(verificationUrl);
-        
         if (!captchaResponse.data.success) {
           res.status(400);
           throw new Error('Captcha verification failed. Are you a robot?');
         }
     }
 
-    // 3. ID Card Upload Handling
+    // 2. ID Card Upload Check
     if (!req.file) {
       res.status(400);
       throw new Error('ID Card image is required');
@@ -32,49 +29,65 @@ exports.registerTeam = async (req, res, next) => {
     
     const filePath = path.join(__dirname, '..', req.file.path);
 
-    // 4. ID Verification (OCR Check)
+    // 3. ID Verification (OCR)
     let isVerified = false;
     try {
       const { data: { text } } = await Tesseract.recognize(filePath, 'eng');
       console.log("OCR Text Detected:", text);
-      
-      // Check if ID contains user's name
       if (text.toLowerCase().includes(req.user.name.toLowerCase())) {
         isVerified = true;
       }
     } catch (err) {
       console.error("OCR Failed:", err);
-      // Proceeding with unverified status rather than crashing
     }
 
-    // 5. Generate Unique Team ID
+    // 4. Create Team ID & Save
     const teamId = `TM-${nanoid(6).toUpperCase()}`;
+    const parsedMembers = JSON.parse(members); // Ensure this is parsed
 
-    // 6. Save to DB
     const team = await Team.create({
       teamName,
-      organization, // Save the organization
+      organization,
       teamId,
-      leader: req.user._id,
-      members: JSON.parse(members), // Parse the JSON string from FormData
+      leader: req.user._id, // Logged in user is the Leader
+      members: parsedMembers,
       idCardUrl: req.file.path,
       isIdVerified: isVerified
     });
 
-    // 7. Send Confirmation Email
+    // 5. Send Email to ALL Members
     const emailHtml = `
-      <h1>Team Registered Successfully!</h1>
-      <p>Your Team ID is: <strong>${teamId}</strong></p>
-      <p>Organization: ${organization}</p>
-      <p>ID Verification Status: <strong>${isVerified ? 'Verified' : 'Pending Manual Review'}</strong></p>
+      <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+        <h1 style="color: #4F46E5;">Team Registered Successfully!</h1>
+        <p><strong>Team Name:</strong> ${teamName}</p>
+        <p><strong>Team ID:</strong> <span style="background: #eee; padding: 5px 10px; border-radius: 5px;">${teamId}</span></p>
+        <p><strong>Organization:</strong> ${organization}</p>
+        <p><strong>Leader:</strong> ${req.user.name}</p>
+        <p><strong>Verification Status:</strong> ${isVerified ? '<span style="color:green">Verified</span>' : '<span style="color:orange">Pending Review</span>'}</p>
+        <br/>
+        <p>Welcome to the Hackathon! Use your Team ID for all future correspondence.</p>
+      </div>
     `;
-    
-    await sendEmail(req.user.email, 'Hackathon Team Registration', emailHtml);
+
+    // Collect all emails (Leader + Members)
+    const emailRecipients = [req.user.email]; // Start with leader
+    if (Array.isArray(parsedMembers)) {
+        parsedMembers.forEach(member => {
+            if (member.email && !emailRecipients.includes(member.email)) {
+                emailRecipients.push(member.email);
+            }
+        });
+    }
+
+    // Send emails in parallel
+    const emailPromises = emailRecipients.map(email => 
+        sendEmail(email, `Team Registration Confirmed: ${teamName}`, emailHtml)
+    );
+    await Promise.all(emailPromises);
 
     res.status(201).json(team);
 
   } catch (error) {
-    // Cleanup file if error occurs
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
@@ -85,14 +98,10 @@ exports.registerTeam = async (req, res, next) => {
 // @desc Get Team for Logged In User
 exports.getMyTeam = async (req, res, next) => {
     try {
-        // Find the team where the leader is the logged-in user
         const team = await Team.findOne({ leader: req.user._id });
-        
         if (!team) {
-            // It's okay if they haven't registered yet, just return null or 404
             return res.status(404).json({ message: "No team found" });
         }
-        
         res.json(team);
     } catch (error) {
         next(error);

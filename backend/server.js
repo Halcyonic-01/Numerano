@@ -33,8 +33,11 @@ const app = express();
 // Global Middleware
 app.use(express.json());
 app.use(cors({
-  origin: ["http://localhost:8080", "http://localhost:5173"], // Allow Vite ports
-  credentials: true
+  // Allow BOTH common Vite ports to be safe
+  origin: ["http://localhost:8080", "http://localhost:5173"], 
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"], // Explicitly allow methods
+  allowedHeaders: ["Content-Type", "Authorization"] // Explicitly allow headers
 }));
 app.use(helmet());
 app.use(morgan('dev'));
