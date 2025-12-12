@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Navbar } from "@/components/layout/Navbar";
 import { StepIndicator } from "@/components/shared/StepIndicator";
 import { FileUpload } from "@/components/shared/FileUpload";
-import { ChatWidget } from "@/components/chat/ChatWidget";
+import ChatWidget from "@/components/chat/ChatWidget";
 import api from "@/lib/api";
 import { 
   ShieldCheck, 

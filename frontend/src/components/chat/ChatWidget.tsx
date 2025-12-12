@@ -1,166 +1,306 @@
-import { useState } from "react";
-import { MessageCircle, X, Send, Bot } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Navbar } from "@/components/layout/Navbar";
+import ChatWidget from "@/components/chat/ChatWidget";
+import {
+  Users,
+  FileCheck,
+  Clock,
+  CheckCircle2,
+  Edit3,
+  Copy,
+  ExternalLink,
+  Bell,
+  Settings,
+  LogOut,
+  Loader2
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 
-interface Message {
-  id: number;
-  text: string;
-  isBot: boolean;
-  timestamp: Date;
+// Define the interface based on your Backend Schema
+interface TeamMember {
+  name: string;
+  email: string;
+  _id?: string;
 }
 
-const initialMessages: Message[] = [
-  {
-    id: 1,
-    text: "👋 Hi there! I'm TeamBot, your friendly assistant. How can I help you today?",
-    isBot: true,
-    timestamp: new Date(),
-  },
+interface TeamData {
+  _id: string;
+  teamId: string;
+  teamName: string;
+  organization: string;
+  status: string;
+  isIdVerified: boolean;
+  members: TeamMember[];
+  createdAt: string;
+}
+
+const stats = [
+  { icon: Users, label: "Team Members", value: "0", color: "from-blue-500 to-cyan-500" },
+  { icon: FileCheck, label: "Documents", value: "1", color: "from-purple-500 to-pink-500" },
+  { icon: Clock, label: "Days Active", value: "1", color: "from-orange-500 to-red-500" },
 ];
 
-export function ChatWidget() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [input, setInput] = useState("");
+export default function Dashboard() {
+  const { toast } = useToast();
+  const [team, setTeam] = useState<TeamData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
-    
-    // Add user message immediately
-    const userMessage: Message = {
-      id: messages.length + 1,
-      text: input,
-      isBot: false,
-      timestamp: new Date(),
+  useEffect(() => {
+    const fetchTeam = async () => {
+      try {
+        const { data } = await api.get('/teams/me');
+        setTeam(data);
+        
+        // Update stats based on real data
+        if (data) {
+            stats[0].value = data.members.length.toString();
+            
+            // Calculate days active
+            const created = new Date(data.createdAt);
+            const now = new Date();
+            const diffTime = Math.abs(now.getTime() - created.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            stats[2].value = diffDays.toString();
+        }
+      } catch (error) {
+        console.log("User has no team or fetch failed");
+      } finally {
+        setLoading(false);
+      }
     };
-    setMessages((prev) => [...prev, userMessage]);
-    const currentInput = input; // capture input for the API call
-    setInput(""); // clear input
 
-    try {
-      // ACTUAL BACKEND CALL
-      const { data } = await api.post('/chat', { message: currentInput });
-      
-      const botResponse: Message = {
-        id: messages.length + 2,
-        text: data.reply, // The text from Gemini
-        isBot: true,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botResponse]);
+    fetchTeam();
+  }, []);
 
-    } catch (error) {
-      const errorMsg: Message = {
-        id: messages.length + 2,
-        text: "Sorry, I'm having trouble connecting to the server right now.",
-        isBot: true,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMsg]);
+  const copyTeamId = () => {
+    if (team?.teamId) {
+        navigator.clipboard.writeText(team.teamId);
+        toast({
+          title: "Copied!",
+          description: "Team ID copied to clipboard.",
+        });
     }
-};
-
-  const getBotResponse = (input: string): string => {
-    const lowerInput = input.toLowerCase();
-    if (lowerInput.includes("register") || lowerInput.includes("team")) {
-      return "To register your team, click on 'Register Team' in the navigation. You'll go through a simple 4-step process! 🎯";
-    }
-    if (lowerInput.includes("help") || lowerInput.includes("support")) {
-      return "I'm here to help! You can ask me about team registration, verification, or any other questions. 💪";
-    }
-    if (lowerInput.includes("verification") || lowerInput.includes("verify")) {
-      return "Verification is quick! Just complete the reCAPTCHA, fill in your details, upload your ID, and you're done! ✅";
-    }
-    return "Thanks for your message! For specific assistance, try asking about team registration, verification, or support. 😊";
   };
 
-  return (
-    <>
-      {/* Chat Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={cn(
-          "fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-primary to-accent shadow-glow flex items-center justify-center text-primary-foreground transition-all duration-300 hover:scale-110 z-50",
-          isOpen && "scale-0 opacity-0"
-        )}
-      >
-        <MessageCircle className="w-6 h-6" />
-      </button>
+  if (loading) {
+      return (
+          <div className="min-h-screen bg-background flex items-center justify-center">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+          </div>
+      );
+  }
 
-      {/* Chat Window */}
-      <div
-        className={cn(
-          "fixed bottom-6 right-6 w-[380px] max-w-[calc(100vw-3rem)] h-[500px] max-h-[calc(100vh-6rem)] glass-card rounded-2xl shadow-large flex flex-col overflow-hidden z-50 transition-all duration-300",
-          isOpen ? "scale-100 opacity-100" : "scale-90 opacity-0 pointer-events-none"
-        )}
-      >
-        {/* Header */}
-        <div className="bg-gradient-to-r from-primary to-accent p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-              <Bot className="w-5 h-5 text-primary-foreground" />
+  // If no team is found, show empty state
+  if (!team) {
+      return (
+        <div className="min-h-screen bg-background">
+            <Navbar />
+            <div className="container mx-auto px-6 pt-32 text-center">
+                <div className="glass-card rounded-3xl p-12 max-w-2xl mx-auto">
+                    <h1 className="font-display text-3xl font-bold mb-4">No Team Registered Yet</h1>
+                    <p className="text-muted-foreground mb-8">Get started by registering your team for the hackathon.</p>
+                    <Button variant="gradient" size="lg" asChild>
+                        <Link to="/register">Register New Team</Link>
+                    </Button>
+                </div>
             </div>
-            <div>
-              <h3 className="font-display font-semibold text-primary-foreground">TeamBot</h3>
-              <p className="text-xs text-primary-foreground/80">Always here to help</p>
+            <ChatWidget />
+        </div>
+      );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+
+      {/* Background */}
+      <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-[100px]" />
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-[120px]" />
+
+      <div className="container mx-auto px-6 pt-32 pb-16 relative">
+        {/* Welcome Banner */}
+        <div className="glass-card rounded-3xl p-8 mb-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full blur-3xl" />
+          <div className="relative">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm text-muted-foreground">Welcome back,</span>
+                  {team.isIdVerified ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Verified
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-medium">
+                      <Clock className="w-3 h-3" />
+                      Pending Verification
+                    </span>
+                  )}
+                </div>
+                <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
+                  {team.teamName}
+                </h1>
+                <p className="text-muted-foreground">{team.organization}</p>
+              </div>
+
+              <div className="flex gap-3">
+                <Button variant="ghost" size="icon">
+                  <Bell className="w-5 h-5" />
+                </Button>
+                <Button variant="ghost" size="icon">
+                  <Settings className="w-5 h-5" />
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="w-8 h-8 rounded-full bg-primary-foreground/20 flex items-center justify-center text-primary-foreground hover:bg-primary-foreground/30 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message) => (
+        {/* Stats Grid */}
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          {stats.map((stat) => (
             <div
-              key={message.id}
-              className={cn(
-                "flex",
-                message.isBot ? "justify-start" : "justify-end"
-              )}
+              key={stat.label}
+              className="glass-card rounded-2xl p-6 hover-lift group"
             >
-              <div
-                className={cn(
-                  "max-w-[80%] p-3 rounded-2xl text-sm animate-scale-in",
-                  message.isBot
-                    ? "bg-muted text-foreground rounded-tl-sm"
-                    : "bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-tr-sm"
-                )}
-              >
-                {message.text}
+              <div className="flex items-center gap-4">
+                <div className={cn(
+                  "w-14 h-14 rounded-2xl bg-gradient-to-br flex items-center justify-center transition-transform group-hover:scale-110",
+                  stat.color
+                )}>
+                  <stat.icon className="w-7 h-7 text-primary-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  <p className="font-display text-3xl font-bold text-foreground">
+                    {stat.value}
+                  </p>
+                </div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Input */}
-        <div className="p-4 border-t border-border">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSend();
-            }}
-            className="flex gap-2"
-          >
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1"
-            />
-            <Button type="submit" variant="gradient" size="icon">
-              <Send className="w-4 h-4" />
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Team ID Card */}
+          <div className="lg:col-span-1">
+            <div className="glass-card rounded-2xl p-6 h-full">
+              <h2 className="font-display text-lg font-semibold text-foreground mb-4">
+                Team ID
+              </h2>
+              <div className="bg-muted rounded-xl p-4 mb-4">
+                <div className="flex items-center justify-between">
+                  <code className="font-mono text-lg font-bold gradient-text">
+                    {team.teamId}
+                  </code>
+                  <Button variant="ghost" size="icon" onClick={copyTeamId}>
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Use this ID for verification and support inquiries
+              </p>
+            </div>
+          </div>
+
+          {/* Team Members */}
+          <div className="lg:col-span-2">
+            <div className="glass-card rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-display text-lg font-semibold text-foreground">
+                  Team Members
+                </h2>
+                <Button variant="outline" size="sm">
+                  <Edit3 className="w-4 h-4 mr-2" />
+                  Edit Team
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {team.members.map((member, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-4 bg-muted/50 rounded-xl animate-fade-in"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-semibold">
+                        {member.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{member.name}</p>
+                        <p className="text-sm text-muted-foreground">{member.email}</p>
+                      </div>
+                    </div>
+                    {/* Assuming first member is leader for display logic if role isn't stored explicitly */}
+                    <span className={cn(
+                      "px-3 py-1 rounded-full text-xs font-medium",
+                      index === 0
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {index === 0 ? "Leader" : "Member"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="mt-8">
+          <h2 className="font-display text-lg font-semibold text-foreground mb-4">
+            Quick Actions
+          </h2>
+          <div className="grid md:grid-cols-3 gap-4">
+            <Button variant="outline" className="h-auto py-4 justify-start" asChild>
+              <Link to="/register">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mr-4">
+                  <Users className="w-5 h-5 text-primary" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium">Register New Team</p>
+                  <p className="text-xs text-muted-foreground">Start fresh registration</p>
+                </div>
+              </Link>
             </Button>
-          </form>
+
+            <Button variant="outline" className="h-auto py-4 justify-start">
+              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center mr-4">
+                <FileCheck className="w-5 h-5 text-accent" />
+              </div>
+              <div className="text-left">
+                <p className="font-medium">View Documents</p>
+                <p className="text-xs text-muted-foreground">Manage uploaded files</p>
+              </div>
+            </Button>
+
+            <Button variant="outline" className="h-auto py-4 justify-start">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center mr-4">
+                <ExternalLink className="w-5 h-5 text-purple-500" />
+              </div>
+              <div className="text-left">
+                <p className="font-medium">Get Support</p>
+                <p className="text-xs text-muted-foreground">Contact our team</p>
+              </div>
+            </Button>
+          </div>
         </div>
       </div>
-    </>
+
+      <ChatWidget />
+    </div>
   );
 }
