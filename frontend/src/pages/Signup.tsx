@@ -22,6 +22,39 @@ export default function Signup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Add comprehensive client-side validation
+    if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check password confirmation
     if (password !== confirmPassword) {
       toast({
         title: "Passwords don't match",
@@ -62,7 +95,7 @@ export default function Signup() {
     } finally {
       setIsLoading(false);
     }
-};
+  };
 
   const handleGoogleSignup = () => {
     toast({

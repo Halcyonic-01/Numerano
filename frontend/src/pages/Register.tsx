@@ -100,11 +100,36 @@ export default function Register() {
         });
         return;
       }
+      
       const hasEmptyMember = teamMembers.some((m) => !m.name.trim() || !m.email.trim());
       if (hasEmptyMember) {
         toast({
           title: "Missing Information",
           description: "Please fill in all team member details.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate email format for all team members
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const invalidEmails = teamMembers.filter(member => !emailRegex.test(member.email));
+      if (invalidEmails.length > 0) {
+        toast({
+          title: "Invalid Email Format",
+          description: "Please enter valid email addresses for all team members.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check for duplicate emails
+      const emails = teamMembers.map(member => member.email.toLowerCase());
+      const uniqueEmails = new Set(emails);
+      if (emails.length !== uniqueEmails.size) {
+        toast({
+          title: "Duplicate Email",
+          description: "Each team member must have a unique email address.",
           variant: "destructive",
         });
         return;
