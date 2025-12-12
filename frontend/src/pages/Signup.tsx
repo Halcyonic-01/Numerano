@@ -6,6 +6,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { PasswordStrength } from "@/components/shared/PasswordStrength";
 import { Eye, EyeOff, Mail, Lock, User, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import api from "@/lib/api"; 
+import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
@@ -16,10 +18,10 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (password !== confirmPassword) {
       toast({
         title: "Passwords don't match",
@@ -30,15 +32,35 @@ export default function Signup() {
     }
 
     setIsLoading(true);
-    
-    setTimeout(() => {
-      setIsLoading(false);
+
+    try {
+      // ACTUAL BACKEND CALL
+      const { data } = await api.post('/auth/signup', {
+        name,
+        email,
+        password
+      });
+
+      // Save token to localStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userInfo', JSON.stringify(data));
+
       toast({
         title: "Account Created!",
-        description: "Welcome to TeamHub. Please check your email to verify.",
+        description: `Welcome, ${data.name}!`,
       });
-    }, 1500);
-  };
+      navigate('/dashboard'); // Redirect to dashboard
+      
+    } catch (error: any) {
+      toast({
+        title: "Signup Failed",
+        description: error.response?.data?.message || "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+};
 
   const handleGoogleSignup = () => {
     toast({

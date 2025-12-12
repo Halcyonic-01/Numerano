@@ -32,7 +32,10 @@ const app = express();
 
 // Global Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:8080", "http://localhost:5173"], // Allow Vite ports
+  credentials: true
+}));
 app.use(helmet());
 app.use(morgan('dev'));
 // Serve uploaded files statically so frontend can display them if needed

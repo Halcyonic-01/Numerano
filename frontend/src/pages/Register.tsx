@@ -6,6 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { StepIndicator } from "@/components/shared/StepIndicator";
 import { FileUpload } from "@/components/shared/FileUpload";
 import { ChatWidget } from "@/components/chat/ChatWidget";
+import api from "@/lib/api";
 import { 
   ShieldCheck, 
   Users, 
@@ -123,13 +124,44 @@ export default function Register() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    
-    setTimeout(() => {
-      const newTeamId = generateTeamId();
-      setTeamId(newTeamId);
+
+    try {
+      // Must use FormData for file uploads
+      const formData = new FormData();
+      formData.append('teamName', teamName);
+      formData.append('organization', organization); // Note: You might need to add this field to your Backend Team Model if it's missing!
+      formData.append('members', JSON.stringify(teamMembers)); // Backend parses this JSON string
+      
+      // RECAPTCHA: Ideally, you should get a real token from a reCAPTCHA component here.
+      // For now, if you disabled reCAPTCHA verification in backend for testing, send a dummy.
+      // If enabled, you need to install 'react-google-recaptcha' in frontend.
+      formData.append('captchaToken', 'dummy-token-or-real-token'); 
+
+      if (idFile) {
+        formData.append('idCard', idFile);
+      }
+
+      const { data } = await api.post('/teams/register', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setTeamId(data.teamId); // The backend returns the generated ID
+      
+      toast({
+        title: "Success!",
+        description: "Team registered successfully.",
+      });
+
+    } catch (error: any) {
+      toast({
+        title: "Registration Failed",
+        description: error.response?.data?.message || "Failed to register team",
+        variant: "destructive",
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 2000);
-  };
+    }
+};
 
   const copyTeamId = () => {
     if (teamId) {

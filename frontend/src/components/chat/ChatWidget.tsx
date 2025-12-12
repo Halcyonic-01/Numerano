@@ -3,6 +3,7 @@ import { MessageCircle, X, Send, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import api from "@/lib/api";
 
 interface Message {
   id: number;
@@ -25,30 +26,42 @@ export function ChatWidget() {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
-
+    
+    // Add user message immediately
     const userMessage: Message = {
       id: messages.length + 1,
       text: input,
       isBot: false,
       timestamp: new Date(),
     };
+    setMessages((prev) => [...prev, userMessage]);
+    const currentInput = input; // capture input for the API call
+    setInput(""); // clear input
 
-    setMessages([...messages, userMessage]);
-    setInput("");
-
-    // Simulate bot response
-    setTimeout(() => {
+    try {
+      // ACTUAL BACKEND CALL
+      const { data } = await api.post('/chat', { message: currentInput });
+      
       const botResponse: Message = {
         id: messages.length + 2,
-        text: getBotResponse(input),
+        text: data.reply, // The text from Gemini
         isBot: true,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botResponse]);
-    }, 1000);
-  };
+
+    } catch (error) {
+      const errorMsg: Message = {
+        id: messages.length + 2,
+        text: "Sorry, I'm having trouble connecting to the server right now.",
+        isBot: true,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    }
+};
 
   const getBotResponse = (input: string): string => {
     const lowerInput = input.toLowerCase();
