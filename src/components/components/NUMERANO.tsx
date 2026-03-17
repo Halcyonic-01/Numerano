@@ -161,7 +161,7 @@ export default function NUMERANO() {
     <div className="relative mb-16 flex justify-center pointer-events-none">
       <div className="relative px-14 py-12">
 
-        <div className="absolute left-1/2 -top-8 md:-top-3 w-10 md:w-14 -translate-x-1/2 z-10">
+        <div className="absolute left-1/2 top-4 md:top-8 w-10 md:w-14 -translate-x-1/2 z-10">
           <img
             src="/infinity.png"
             alt="infinity"

@@ -20,7 +20,6 @@ type ShapeItem = {
     baseStyle: React.CSSProperties;
 };
 
-// Slightly modified so they can float continuously
 const SHAPES_CONFIG: ShapeItem[] = [
     { Component: ShapeCube, baseStyle: { left: "8%", top: "12%", transform: "rotate(18deg) scale(0.8)" } },
     { Component: ShapeCylinder, baseStyle: { left: "25%", top: "8%", transform: "rotate(-22deg) scale(0.7)" } },
@@ -48,6 +47,35 @@ const SHAPES_CONFIG: ShapeItem[] = [
 
 const MOBILE_SHAPE_INDICES = [0, 3, 5, 7, 9, 12, 14, 16, 20] as const;
 const TABLET_SHAPE_INDICES = [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 12, 13, 14, 16, 18, 20] as const;
+
+const EQUATION_PARTICLES = [
+    '∇·E = ρ/ε₀',
+    'F = ma',
+    'PV = nRT',
+    'HΨ = EΨ',
+    'x = [-b ± √(b²-4ac)]/2a',
+    'sin²θ + cos²θ = 1',
+    '∫e^x dx = e^x + C',
+    '∇×E = -∂B/∂t',
+    'A = πr²',
+    'V = (4/3)πr³',
+    'E = hf',
+    'z = x + iy',
+    'det(A - λI) = 0',
+    'f(x) = ∑a_n xⁿ',
+    '∂u/∂t = α∇²u',
+];
+
+const PARTICLE_STYLES: React.CSSProperties[] = Array.from({ length: 15 }).map((_, i) => ({
+    left: `${(i * 37 + 11) % 100}%`,
+    animationDelay: `${i * 1.5}s`,
+    animationDuration: `${15 + ((i * 7) % 15)}s`,
+    fontSize: `${12 + (i % 4) * 2}px`,
+    color: `rgba(${
+        i % 3 === 0 ? '59,130,246' :
+        i % 3 === 1 ? '168,85,247' : '34,211,238'
+    }, ${0.1 + (i % 3) * 0.05})`,
+}));
 
 export default function SiteBackground() {
     const [mounted, setMounted] = useState(false);
@@ -78,13 +106,91 @@ export default function SiteBackground() {
     return (
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
             <style>{`
-        .hero-bg {  
-          background:
-            radial-gradient(600px circle at 30% 35%, rgba(168, 85, 247, 0.22), transparent 60%),
-            radial-gradient(500px circle at 70% 30%, rgba(59, 130, 246, 0.18), transparent 65%),
-            radial-gradient(700px circle at 50% 75%, rgba(147, 51, 234, 0.18), transparent 70%),
-            linear-gradient(135deg, #050914 0%, #07142a 35%, #0b1f3a 55%, #090f24 100%);
+        /* ── Mathematical background – exact match from HeroSection ── */
+        .math-bg {
+          background-color: #0a0e1a;
+          background-image:
+            url("data:image/svg+xml,%3Csvg width='300' height='300' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='150' y='150' font-size='20' font-family='Cambria Math, serif' fill='rgba(59,130,246,0.15)' text-anchor='middle'%3EE = mc²%3C/text%3E%3C/svg%3E"),
+            url("data:image/svg+xml,%3Csvg width='350' height='350' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='175' y='175' font-size='22' font-family='Cambria Math, serif' fill='rgba(168,85,247,0.12)' text-anchor='middle'%3Ee^{iπ} + 1 = 0%3C/text%3E%3C/svg%3E"),
+            url("data:image/svg+xml,%3Csvg width='280' height='280' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='140' y='140' font-size='18' font-family='Cambria Math, serif' fill='rgba(34,211,238,0.1)' text-anchor='middle'%3Eφ = (1+√5)/2%3C/text%3E%3C/svg%3E"),
+            url("data:image/svg+xml,%3Csvg width='380' height='380' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='190' y='190' font-size='16' font-family='monospace' fill='rgba(245,158,11,0.08)' text-anchor='middle'%3E∫_a^b f'(x) dx = f(b)-f(a)%3C/text%3E%3C/svg%3E"),
+            url("data:image/svg+xml,%3Csvg width='320' height='320' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='160' y='160' font-size='14' font-family='monospace' fill='rgba(16,185,129,0.09)' text-anchor='middle'%3Ef'(x)=lim_{h→0} (f(x+h)-f(x))/h%3C/text%3E%3C/svg%3E"),
+            url("data:image/svg+xml,%3Csvg width='260' height='260' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='130' y='130' font-size='24' font-family='Cambria Math, serif' fill='rgba(239,68,68,0.08)' text-anchor='middle'%3Ea² + b² = c²%3C/text%3E%3C/svg%3E"),
+            url("data:image/svg+xml,%3Csvg width='340' height='340' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='170' y='170' font-size='16' font-family='monospace' fill='rgba(139,92,246,0.07)' text-anchor='middle'%3E∇²φ = 1/c² ∂²φ/∂t²%3C/text%3E%3C/svg%3E"),
+            radial-gradient(ellipse at 30% 20%, rgba(59, 130, 246, 0.12) 0%, transparent 60%),
+            radial-gradient(ellipse at 80% 70%, rgba(168, 85, 247, 0.1) 0%, transparent 60%),
+            radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.08) 0%, transparent 70%),
+            linear-gradient(to right, rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+          background-size:
+            300px 300px,
+            350px 350px,
+            280px 280px,
+            380px 380px,
+            320px 320px,
+            260px 260px,
+            340px 340px,
+            100% 100%,
+            100% 100%,
+            100% 100%,
+            40px 40px,
+            40px 40px;
+          background-position:
+            10% 15%,
+            85% 30%,
+            25% 65%,
+            70% 80%,
+            40% 40%,
+            15% 85%,
+            75% 60%,
+            0 0,
+            0 0,
+            0 0,
+            0 0,
+            0 0;
         }
+
+        .math-symbols-overlay {
+          position: absolute;
+          inset: 0;
+          background-image:
+            url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50' y='50' font-size='40' font-family='Cambria Math' fill='rgba(59,130,246,0.03)' text-anchor='middle'%3E∑%3C/text%3E%3C/svg%3E"),
+            url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50' y='50' font-size='36' font-family='Cambria Math' fill='rgba(168,85,247,0.03)' text-anchor='middle'%3E∫%3C/text%3E%3C/svg%3E"),
+            url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50' y='50' font-size='32' font-family='Cambria Math' fill='rgba(34,211,238,0.03)' text-anchor='middle'%3Eπ%3C/text%3E%3C/svg%3E"),
+            url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50' y='50' font-size='38' font-family='Cambria Math' fill='rgba(245,158,11,0.03)' text-anchor='middle'%3E∞%3C/text%3E%3C/svg%3E");
+          background-size: 200px 200px, 180px 180px, 160px 160px, 190px 190px;
+          background-position: 20% 25%, 75% 40%, 35% 70%, 80% 75%;
+          opacity: 0.3;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .equation-particles {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          overflow: hidden;
+          z-index: 2;
+        }
+
+        .equation-particle {
+          position: absolute;
+          font-family: 'Cambria Math', serif;
+          font-size: 14px;
+          color: rgba(59, 130, 246, 0.2);
+          white-space: nowrap;
+          animation: float-equation 20s linear infinite;
+          pointer-events: none;
+        }
+
+        @keyframes float-equation {
+          0%   { transform: translateY(100vh) rotate(0deg);   opacity: 0; }
+          10%  { opacity: 0.3; }
+          90%  { opacity: 0.3; }
+          100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+
+        /* ── Shape styles ── */
         .vignette {
           background: radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.65) 100%);
         }
@@ -101,19 +207,40 @@ export default function SiteBackground() {
           z-index: 50;
         }
       `}</style>
-            <div className="absolute inset-0 hero-bg" />
-            <div className="absolute inset-0 pointer-events-none vignette" />
 
+            {/* Layer 0 – math-bg (exact from HeroSection) */}
+            <div className="absolute inset-0 math-bg" style={{ zIndex: 0 }} />
+
+            {/* Layer 1 – math symbols overlay */}
+            <div className="math-symbols-overlay" style={{ zIndex: 1 }} />
+
+            {/* Layer 2 – floating equation particles */}
+            <div className="equation-particles" style={{ zIndex: 2 }}>
+                {EQUATION_PARTICLES.map((eq, i) => (
+                    <div
+                        key={i}
+                        className="equation-particle"
+                        style={PARTICLE_STYLES[i]}
+                    >
+                        {eq}
+                    </div>
+                ))}
+            </div>
+
+            {/* Layer 3 – vignette */}
+            <div className="absolute inset-0 pointer-events-none vignette" style={{ zIndex: 3 }} />
+
+            {/* Layer 4 – floating 3-D shapes */}
             {mounted && activeShapeIndices.map((shapeIndex, orderIndex) => {
                 const { Component, baseStyle } = SHAPES_CONFIG[shapeIndex];
 
-                // generate random consistent float animations based on index
                 const durationY = 3 + (shapeIndex % 5);
-                const delayY = (shapeIndex % 3);
+                const delayY = shapeIndex % 3;
 
                 const shapeStyle: React.CSSProperties = {
                     ...baseStyle,
                     transform: `${baseStyle.transform} scale(${responsiveScale})`,
+                    zIndex: 4,
                 };
 
                 return (
@@ -121,8 +248,8 @@ export default function SiteBackground() {
                         key={shapeIndex}
                         className="shape-container"
                         style={shapeStyle}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 0.6, scale: 1 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 0.6 }}
                         transition={{ delay: orderIndex * 0.05, duration: 0.5 }}
                     >
                         <motion.div
@@ -131,13 +258,13 @@ export default function SiteBackground() {
                                 duration: durationY,
                                 repeat: Infinity,
                                 ease: "easeInOut",
-                                delay: delayY
+                                delay: delayY,
                             }}
                         >
                             <Component />
                         </motion.div>
                     </motion.div>
-                )
+                );
             })}
         </div>
     );
