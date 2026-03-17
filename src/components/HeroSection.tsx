@@ -52,96 +52,57 @@ export default function HeroSection() {
   ];
 
   return (
-    <section className="relative h-screen w-full overflow-hidden">
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) translateX(0px); }
-          50% { transform: translateY(-10px) translateX(5px); }
-        }
+    <section className="relative h-screen w-full overflow-hidden flex flex-col justify-center items-center pointer-events-none">
 
-        .hero-bg {  
-          background:
-            radial-gradient(600px circle at 30% 35%, rgba(168, 85, 247, 0.15), transparent 60%),
-            radial-gradient(500px circle at 70% 30%, rgba(59, 130, 246, 0.12), transparent 65%),
-            radial-gradient(700px circle at 50% 75%, rgba(147, 51, 234, 0.12), transparent 70%);
-        }
+      <div className="relative z-30 h-full flex flex-col items-center justify-center text-center px-4 pointer-events-none">
+        <motion.div
+          className="pointer-events-auto relative"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <div className="absolute inset-0 overflow-hidden rounded-full">
+            {particles.map((particle) => (
+              <div
+                key={particle.id}
+                className="absolute w-[2px] h-[2px] bg-cyan-300/40 rounded-full"
+                style={{
+                  left: particle.left,
+                  top: particle.top,
+                  animation: `float ${particle.duration}s ease-in-out infinite`,
+                  animationDelay: `${particle.delay}s`,
+                }}
+              />
+            ))}
+          </div>
 
-        .vignette {
-          background: radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%);
-        }
+          <div className="pointer-events-auto">
+            <NUMERANO />
+          </div>
 
-        .shape {
-          position: absolute;
-          transform-origin: center;
-          opacity: 0.75;
-          z-index: 20;
-          pointer-events: auto;
-        }
+          <motion.div
+            className="relative mb-12 max-w-[700px] mx-auto text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+          >
+            <p className="mx-auto text-gray-200 text-[1.2rem] md:text-[1.4rem] font-light leading-relaxed text-center">
+              By{" "}
+              <span className="relative inline-block">
+                <span className="text-cyan-300 font-semibold bg-gradient-to-r from-cyan-500/10 to-blue-500/10 px-3 py-1 rounded-lg border border-cyan-500/30">
+                  Department of Mathematics
+                </span>
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-cyan-400 rounded-full animate-ping" />
+              </span>
+              {" "}of Dayananda Sagar College of Engineering
+            </p>
 
-        .shape:hover {
-          opacity: 1;
-          filter: drop-shadow(0 0 10px rgba(0, 220, 255, 0.5));
-        }
-      `}</style>
-
-      {/* Hero gradient overlays */}
-      <div className="absolute inset-0 hero-bg" />
-      <div className="absolute inset-0 pointer-events-none vignette" />
-
-      {shapes.map(({ Component, style }, index) => (
-        <div key={index} className="shape" style={style}>
-          <Component />
-        </div>
-      ))}
-
-        <div className="relative z-30 h-full flex flex-col items-center justify-center text-center px-4 pointer-events-none">
-            <div className="pointer-events-auto relative">
-              <div className="absolute inset-0 overflow-hidden rounded-full">
-                {[...Array(8)].map((_, i) => (
-                    <div
-                    key={i}
-                    className="absolute w-[2px] h-[2px] bg-cyan-300/40 rounded-full"
-                    style={{
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                        animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
-                        animationDelay: `${Math.random() * 2}s`,
-                    }}
-                    />
-                ))}
-              </div>
-
-              <div className="pointer-events-auto">
-                <NUMERANO />
-              </div>
-
-              <div className="relative mb-12 max-w-[700px] mx-auto text-center">
-                <p className="mx-auto text-gray-200 text-[1.2rem] md:text-[1.4rem] font-light leading-relaxed text-center">
-                  By{" "}
-                  <span className="relative inline-block">
-                    <span className="text-cyan-300 font-semibold bg-gradient-to-r from-cyan-500/10 to-blue-500/10 px-3 py-1 rounded-lg border border-cyan-500/30">
-                      Department of Mathematics
-                    </span>
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-cyan-400 rounded-full animate-ping" />
-                  </span>
-                  {" "}of Dayananda Sagar College of Engineering
-                </p>
-
-                <div className="mt-6 flex items-center justify-center gap-4 text-sm text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse" />
-                    <span>Live Sessions</span>
-                  </div>
-                  <div className="w-1 h-1 bg-gray-600 rounded-full" />
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                    <span>Research Projects</span>
-                  </div>
-                  <div className="w-1 h-1 bg-gray-600 rounded-full" />
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
-                    <span>Math Competitions</span>
-                  </div>
+            <div className="mt-6 flex items-center justify-center gap-4 text-sm text-gray-400 flex-wrap">
+              {HERO_FEATURES.map((feature, idx) => (
+                <div key={feature.label} className="flex items-center gap-2">
+                  {idx > 0 && <div className="w-1 h-1 bg-gray-600 rounded-full hidden sm:block" />}
+                  <div className={`w-2 h-2 bg-${feature.color}-500 rounded-full animate-pulse`} />
+                  <span>{feature.label}</span>
                 </div>
               </div>
 

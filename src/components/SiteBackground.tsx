@@ -46,9 +46,34 @@ const SHAPES_CONFIG: ShapeItem[] = [
     { Component: ShapeCone, baseStyle: { left: "85%", top: "82%", transform: "rotate(18deg) scale(0.7)" } },
 ];
 
+const MOBILE_SHAPE_INDICES = [0, 3, 5, 7, 9, 12, 14, 16, 20] as const;
+const TABLET_SHAPE_INDICES = [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 12, 13, 14, 16, 18, 20] as const;
+
 export default function SiteBackground() {
     const [mounted, setMounted] = useState(false);
-    useEffect(() => setMounted(true), []);
+    const [viewportWidth, setViewportWidth] = useState(() =>
+        typeof window !== 'undefined' ? window.innerWidth : 1280
+    );
+
+    useEffect(() => {
+        setMounted(true);
+
+        const handleResize = () => setViewportWidth(window.innerWidth);
+        handleResize();
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const isMobile = viewportWidth < 640;
+    const isTablet = viewportWidth >= 640 && viewportWidth < 1024;
+    const responsiveScale = isMobile ? 0.62 : isTablet ? 0.8 : 1;
+
+    const activeShapeIndices = isMobile
+        ? MOBILE_SHAPE_INDICES
+        : isTablet
+            ? TABLET_SHAPE_INDICES
+            : SHAPES_CONFIG.map((_, index) => index);
 
     return (
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
@@ -79,19 +104,26 @@ export default function SiteBackground() {
             <div className="absolute inset-0 hero-bg" />
             <div className="absolute inset-0 pointer-events-none vignette" />
 
-            {mounted && SHAPES_CONFIG.map(({ Component, baseStyle }, index) => {
+            {mounted && activeShapeIndices.map((shapeIndex, orderIndex) => {
+                const { Component, baseStyle } = SHAPES_CONFIG[shapeIndex];
+
                 // generate random consistent float animations based on index
-                const durationY = 3 + (index % 5);
-                const delayY = (index % 3);
+                const durationY = 3 + (shapeIndex % 5);
+                const delayY = (shapeIndex % 3);
+
+                const shapeStyle: React.CSSProperties = {
+                    ...baseStyle,
+                    transform: `${baseStyle.transform} scale(${responsiveScale})`,
+                };
 
                 return (
                     <motion.div
-                        key={index}
+                        key={shapeIndex}
                         className="shape-container"
-                        style={baseStyle}
+                        style={shapeStyle}
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 0.6, scale: 1 }}
-                        transition={{ delay: index * 0.05, duration: 0.5 }}
+                        transition={{ delay: orderIndex * 0.05, duration: 0.5 }}
                     >
                         <motion.div
                             animate={{ y: [0, -15, 0] }}
